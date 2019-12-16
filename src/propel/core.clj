@@ -408,10 +408,29 @@
        (< prob 0.75) (uniform-addition (:plushy (select-parent pop argmap))
                                        (:instructions argmap))
        :else (uniform-deletion (:plushy (select-parent pop argmap)))))})
-
+"takes in the correct output and actual output and returns the absolute value of the difference"
 (defn hundred-error-ananya
   [correct-output actual-output]
   (abs (- correct-output actual-output)))
+
+(defn hundred-error-function
+  [argmap individual]
+  (let [program (push-from-plushy (:plushy individual))
+        correct-output 100
+        output (peek-stack
+                (interpret-program
+                 program
+                 empty-push-state
+                 (:step-limit argmap))
+                :integer)
+        error ((fn [correct-output output]
+                 (if (= output :no-stack-item)
+                   100000000 (hundred-error-ananya correct-output output))) correct-output output)]
+
+    (assoc individual
+           :behaviors output
+           :error error
+           :total-error error)))
 
 (defn report
   "Reports information each generation."
@@ -455,7 +474,7 @@
   [& args]
   (binding [*ns* (the-ns 'propel.core)]
     (propel-gp (update-in (merge {:instructions default-instructions
-                                  :error-function fizz-buzz-error-function
+                                  :error-function hundred-error-function
                                   :max-generations 500
                                   :population-size 200
                                   :max-initial-plushy-size 50
