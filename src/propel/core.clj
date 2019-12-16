@@ -441,8 +441,7 @@
     (println "-------------------------------------------------------")
     (print "Best plushy: ") (prn (:plushy best))
     (print "Best program: ") (prn (push-from-plushy (:plushy best)))
-    (println "Best total error:" (:total-error best))
-    (println "Best errors:" (:errors best))
+    (println "Best error:" (:total-error best))
     (println "Best behaviors:" (:behaviors best))
     (println)))
 
