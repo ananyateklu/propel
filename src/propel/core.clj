@@ -409,6 +409,10 @@
                                        (:instructions argmap))
        :else (uniform-deletion (:plushy (select-parent pop argmap)))))})
 
+(defn hundred-error-ananya
+  [correct-output actual-output]
+  (abs (- correct-output actual-output)))
+
 (defn report
   "Reports information each generation."
   [pop generation]
