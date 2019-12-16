@@ -12,57 +12,8 @@
 ; TMH: ERCs?
 (def default-instructions
   (list
-   'in1 ; Might want multiple copies of this as we get lots of instructions
    'integer_+
    'integer_-
-   'integer_*
-   'integer_%
-   'integer_mod
-   ; Do we want this? Nic votes against because it seems to provide *too*
-   ; much help on the problem, and isn't something that's available in most
-   ; programming languages.
-   ; 'integer_divisible_by
-   'integer_=
-   'integer_zero?
-   'integer_to_string
-  ;  'integer_dup
-  ;  'integer_empty?
-  ;  'integer_depth
-   'exec_dup
-   'exec_if
-   'boolean_and
-   'boolean_or
-   'boolean_not
-   'boolean_=
-  ;  'boolean_dup
-  ;  'boolean_depth
-  ;  'boolean_empty?
-  ;  'string_=
-  ;  'string_take
-  ;  'string_drop
-  ;  'string_reverse
-   'string_concat
-  ;  'string_length
-  ;  'string_includes?
-  ;  'string_depth
-  ;  'string_empty?
-  ;  'string_dup
-   'close
-   0
-   3
-   5
-  ; I (Nic) didn't include this. Some problem descriptions include 15,
-  ; where others use language like "both" instead. I figure I'll
-  ; start with the harder version.
-  ; 15
-   true
-   false
-   "Fizz"
-   "Buzz"
-  ; I (Nic) think there are good arguments for including this (it seems to
-  ; be explicitly included in many problem statements), but I think
-  ; the problem is more interesting/impressive without it.
-  ; "FizzBuzz"
    ))
 
 (def opens ; number of blocks opened by instructions (default = 0)
@@ -187,13 +138,13 @@
 
 (defn integer_mod
   [state]
-  (make-push-instruction 
-   state 
+  (make-push-instruction
+   state
    (fn [num den]
      (if (zero? den)
        1
-       (mod num den))) 
-   [:integer :integer] 
+       (mod num den)))
+   [:integer :integer]
    :integer))
 
 (defn integer_to_string
@@ -472,165 +423,8 @@
         (zero? (:total-error (first evaluated-pop))) (println "SUCCESS")
         (>= generation max-generations) nil
         :else (recur (inc generation)
-                     (repeatedly population-size 
+                     (repeatedly population-size
                                  #(new-individual evaluated-pop argmap)))))))
-
-;;;;;;;;;
-;; Problem: f(x) = 7x^2 - 20x + 13
-
-(defn target-function-hard
-  "Target function: f(x) = 7x^2 - 20x + 13"
-  [x]
-  (+ (* 7 x x)
-     (* -20 x)
-     13))
-
-(defn target-function
-  "Target function: f(x) = x^3 + x + 3"
-  [x]
-  (+ (* x x x)
-     x
-     3))
-
-(defn target-function-class
-  [x]
-  (+' (*' 7 x x x x x x x)
-      (*' 7 x x x x x x)
-      (*' (/ 7 2) x x x x x)
-      (*' (/ 7 3) x x x x)
-      (*' x x x)
-      (*' 3 x x)
-      (*' (/ 3 7) x)
-      49))
-
-(defn regression-error-function
-  "Finds the behaviors and errors of the individual."
-  [argmap individual]
-  (let [program (push-from-plushy (:plushy individual))
-        inputs (range -10 11)
-        correct-outputs (map target-function-hard inputs)
-        outputs (map (fn [input]
-                       (peek-stack
-                        (interpret-program
-                         program
-                         (assoc empty-push-state :input {:in1 input})
-                         (:step-limit argmap))
-                        :integer))
-                     inputs)
-        errors (map (fn [correct-output output]
-                      (if (= output :no-stack-item)
-                        1000000000
-                        (abs (-' correct-output output))))
-                    correct-outputs
-                    outputs)]
-    (assoc individual
-           :behaviors outputs
-           :errors errors
-           :total-error (apply +' errors))))
-
-;;;;;;;;;;;;;;;;;;;;;;;
-;; Fizz-Buzz fitness
-
-(defn to-fizz-buzz
-  [n]
-  (cond
-    (zero? (rem n 15)) "FizzBuzz"
-    (zero? (rem n 3)) "Fizz"
-    (zero? (rem n 5)) "Buzz"
-    :else (str n)))
-
-(def fizz-buzz-training
-  (map to-fizz-buzz (range 100)))
-
-(defn num-extra-chars 
-  [max-error correct-output actual-output]
-  (min max-error
-       (- (count actual-output) (count correct-output))))
-
-; The error we'll return if the program doesn't return a
-; string that at least contains the desired output as a
-; substring. 
-(def fizz-buzz-failure-error 100)
-
-(defn fizzbuzz-case-error
-  [actual-output]
-  (cond
-    (every? #(clojure.string/includes? actual-output %) ["Fizz" "Buzz"])
-    (+ 10 (num-extra-chars 5 "FizzBuzz" actual-output))
-    (some #(clojure.string/includes? actual-output %) ["Fizz" "Buzz"])
-    (+ 20 (num-extra-chars 10 "FizzBuzz" actual-output))
-    :else fizz-buzz-failure-error))
-
-(defn fizz-buzz-error-jackson
-  "Given the correct output and the actual output, returns an error
-   value"
-  [correct-output actual-output]
-  (cond
-    ; If there is nothing on the string stack return a substantial penalty.
-    (= actual-output :no-stack-item) (* 10 fizz-buzz-failure-error)
-    ; If the actual output contains the expected output, the error
-    ; is the number of extra characters, capped at 20.
-    (clojure.string/includes? actual-output correct-output) 
-    (num-extra-chars 20 correct-output actual-output)
-    ; If the target output is "FizzBuzz" we'll handle that
-    ; separately.
-    (= correct-output "FizzBuzz") (fizzbuzz-case-error actual-output)
-    ; Otherwise we didn't output anything containing the target
-    ; output, so we'll return fizz-buzz-failure-error.
-    :else fizz-buzz-failure-error))
-
-(defn fizz-buzz-error-function
-  "Finds the behaviors and errors of a given individual on
-   the FizzBuzz problem"
-  [argmap individual]
-  (let [program (push-from-plushy (:plushy individual))
-        inputs (range 100)
-        correct-outputs fizz-buzz-training
-        outputs (map (fn [input]
-                       (peek-stack
-                        (interpret-program
-                         program
-                         (assoc empty-push-state :input {:in1 input})
-                         (:step-limit argmap))
-                        :string))
-                     inputs)
-        errors (map fizz-buzz-error-jackson
-                    correct-outputs
-                    outputs)]
-    (assoc individual
-           :behaviors outputs
-           :errors errors
-           :total-error (apply +' errors))))
-
-;;;;;;;;;
-;; String classification
-
-(defn string-classification-error-function
-  "Finds the behaviors and errors of the individual."
-  [argmap individual]
-  (let [program (push-from-plushy (:plushy individual))
-        inputs ["GCG" "GACAG" "AGAAG" "CCCA" "GATTACA" "TAGG" "GACT"]
-        correct-outputs [false false false false true true true]
-        outputs (map (fn [input]
-                       (peek-stack
-                        (interpret-program
-                         program
-                         (assoc empty-push-state :input {:in1 input})
-                         (:step-limit argmap))
-                        :boolean))
-                     inputs)
-        errors (map (fn [correct-output output]
-                      (if (= output :no-stack-item)
-                        1000000
-                        (if (= correct-output output)
-                          0
-                          1)))
-                    correct-outputs
-                    outputs)]
-    (assoc individual
-           :behaviors outputs
-           :errors errors
-           :total-error (apply +' errors))))
 
 (defn -main
   "Runs propel-gp, giving it a map of arguments."
