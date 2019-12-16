@@ -105,6 +105,15 @@
   [state]
   (push-to-stack state :exec (:in1 (:input state))))
 
+(defn combine
+  "Combines two integers by putting them together and create a new integer."
+  [num1 num2]
+  (if (neg? num2) (Integer/parseInt (str num1 (abs num2))) (Integer/parseInt (str num1 num2))))
+
+(defn integer_combine
+  [state]
+  (make-push-instruction state combine [:integer :integer] :integer))
+
 (defn integer_+
   [state]
   (make-push-instruction state +' [:integer :integer] :integer))
