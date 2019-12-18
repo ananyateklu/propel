@@ -12,19 +12,19 @@
 ; TMH: ERCs?
 (def default-instructions
   (list
-   'integer_+
-   'integer_-
-   'integer_combine
-   0
-   1
-   2
-   3
-   4
-   5
-   6
-   7
-   8
-   9
+   'string_+
+   'string_-
+   'string_combine
+   "0"
+   "1"
+   "2"
+   "3"
+   "4"
+   "5"
+   "6"
+   "7"
+   "8"
+   "9"
    ))
 
 (def opens ; number of blocks opened by instructions (default = 0)
@@ -39,7 +39,8 @@
    :integer '()
    :string '()
    :boolean '()
-   :input {}})
+   :input {}
+   })
 
 (defn abs
   "Absolute value."
@@ -108,6 +109,19 @@
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
+(defn make-push-instruction-str
+  "A utility function for making Push instructions. Takes a state, the function
+  to apply to the args, the stacks to take the args from, and the stack to return
+  the result to. Applies the function to the args (taken from the stacks) and pushes
+  the return value onto return-stack."
+  [state function arg-stacks return-stack]
+  (let [args-pop-result (get-args-from-stacks state arg-stacks)]
+    (if (= args-pop-result :not-enough-args)
+      state
+      (let [result (str [:args function args-pop-result])
+            new-state (:state args-pop-result)]
+        (push-to-stack new-state return-stack result)))))
+
 ;;;;;;;;;
 ;; Instructions
 
@@ -119,19 +133,27 @@
 (defn combine
   "Combines two integers by putting them together and create a new integer."
   [num1 num2]
-  (if (neg? num2) (Integer/parseInt (str num1 (abs num2))) (Integer/parseInt (str num1 num2))))
+  (str num1 num2))
 
-(defn integer_combine
+(defn string_+
   [state]
-  (make-push-instruction state combine [:integer :integer] :integer))
+  (make-push-instruction state #(str %1 "+" %2) [:string :string] :string))
+
+(defn string_-
+  [state]
+  (make-push-instruction state #(str %1 "-" %2) [:string :string] :string))
+
+(defn string_combine
+  [state]
+  (make-push-instruction state #(str %1 %2) [:string :string] :string))
 
 (defn integer_+
   [state]
-  (make-push-instruction state +' [:integer :integer] :integer))
+  (make-push-instruction state +' [:expr :expr] :expr))
 
 (defn integer_-
   [state]
-  (make-push-instruction state -' [:integer :integer] :integer))
+  (make-push-instruction state -' [:expr :expr] :expr))
 
 (defn integer_*
   [state]
@@ -277,7 +299,7 @@
       (first-instruction popped-state)
       ;
       (integer? first-instruction)
-      (push-to-stack popped-state :integer first-instruction)
+      (push-to-stack popped-state :expr first-instruction)
       ;
       (string? first-instruction)
       (push-to-stack popped-state :string first-instruction)
@@ -409,9 +431,22 @@
                                        (:instructions argmap))
        :else (uniform-deletion (:plushy (select-parent pop argmap)))))})
 "takes in the correct output and actual output and returns the absolute value of the difference"
+(defn parse-infix-string
+  [s]
+  (let [m (re-find #"(\d+)([-+])(.*)" s)]
+    (if (not m)
+      (Integer. s)
+      (if (= (nth m 2) "+")
+        (+ (Integer. (nth m 1))
+           (parse-infix-string (nth m 3)))
+        (- (Integer. (nth m 1))
+           (parse-infix-string (nth m 3)))))))
+
 (defn hundred-error-ananya
   [correct-output actual-output]
-  (abs (- correct-output actual-output)))
+  (abs (- correct-output (parse-infix-string actual-output))))
+
+
 
 (defn hundred-error-function
   [argmap individual]
@@ -422,7 +457,7 @@
                  program
                  empty-push-state
                  (:step-limit argmap))
-                :integer)
+                :string)
         error ((fn [correct-output output]
                  (if (= output :no-stack-item)
                    100000000 (hundred-error-ananya correct-output output))) correct-output output)]
@@ -439,8 +474,8 @@
     (println "-------------------------------------------------------")
     (println "               Report for Generation" generation)
     (println "-------------------------------------------------------")
-    (print "Best plushy: ") (prn (:plushy best))
     (print "Best program: ") (prn (push-from-plushy (:plushy best)))
+    (print "Best plushy: ") (prn (:plushy best))
     (println "Best error:" (:total-error best))
     (println "Best behaviors:" (:behaviors best))
     (println)))
