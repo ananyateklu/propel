@@ -4,9 +4,9 @@ Description of the problem
 
 Setup 
 
-    - I have also added the integers 0-9 into the instruction list so they can be used.  I have also added the functions integer_+ , integer_- and integer_combine to add, subtract and combine two integers. I created the function integer_combine because there is no function that combines two integers in propel. Integer_combine works by taking two integers and checks if the second number is negative. if it is, the function will change the absolute value of that number. then it changes the two numbers into a sting, concatinates them, change them back to integer again and returns the number combined number.  
+- I have also added the integers 0-9 into the instruction list so they can be used.  I have also added the functions integer_+ , integer_- and integer_combine to add, subtract and combine two integers. I created the function integer_combine because there is no function that combines two integers in propel. Integer_combine works by taking two integers and checks if the second number is negative. if it is, the function will change the absolute value of that number. then it changes the two numbers into a sting, concatinates them, change them back to integer again and returns the number combined number.  
 
-    - To check if my output is correct i have created the function that takes the correct output and the actual output and gives the absolute value of the difference. which gives me the error. 
+- To check if my output is correct i have created the function that takes the correct output and the actual output and gives the absolute value of the difference. which gives me the error. 
 
 
 Results 
